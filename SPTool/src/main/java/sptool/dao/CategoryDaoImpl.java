@@ -23,20 +23,16 @@ public class CategoryDaoImpl implements CategoryDao {
     /**
      * Save new Category
      */
-    public void save(Category category) {
+    public long save(Category category) {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-        session.save(category);
-	//TODO Save only Category without any Ads
-        for (Advertisement ad:
-             category.getAdds()) {
-            session.save(ad);
-        }
-
+        long newId = (Long) session.save(category);
 
         tx.commit();
         session.close();
+
+        return newId;
     }
 
     /**
@@ -52,7 +48,6 @@ public class CategoryDaoImpl implements CategoryDao {
 
         Category category = (Category) session.get(Category.class, id);
 
-        session.update(category);
 
         tx.commit();
         session.close();

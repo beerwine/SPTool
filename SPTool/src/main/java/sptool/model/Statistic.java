@@ -1,12 +1,12 @@
 package sptool.model;
 
-import org.hibernate.annotations.*;
+
 
 import javax.persistence.*;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.util.Date;
-
+import sptool.model.Advertisement;
 /**
  * Created by sergey on 6/5/16.
  * Maps class Statistic on the table statistic
@@ -16,8 +16,7 @@ import java.util.Date;
 public class Statistic {
 
     @Id
-    @GeneratedValue(generator="gen")
-    @GenericGenerator(name = "gen", strategy = "foreign", parameters = {@org.hibernate.annotations.Parameter(name = "property", value = "add")})
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_statistic", nullable = false)
     private int id;
 
@@ -31,9 +30,10 @@ public class Statistic {
     private int paid;
 
 
-    @OneToOne
-    @PrimaryKeyJoinColumn
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "id_advertisement", nullable = false)
     private Advertisement add;
+
 
     public int getId() {
         return id;

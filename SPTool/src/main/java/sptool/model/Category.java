@@ -27,8 +27,7 @@ public class Category {
     @Column(name = "state")
     private String state;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
-    private List<Advertisement> adds;
+
 
 
     public int getId() {
@@ -48,13 +47,6 @@ public class Category {
     }
 
 
-    public List<Advertisement> getAdds() {
-        return adds;
-    }
-
-    public void setAdds(List<Advertisement> adds) {
-        this.adds = adds;
-    }
 
     public String getState() {
         return state;

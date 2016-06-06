@@ -29,14 +29,11 @@ public class Advertisement {
     @Column(name = "state")
     private String state;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "id_category", nullable = false)
     private Category category;
 
 
-    @OneToOne(mappedBy = "add")
-    @Cascade(value=org.hibernate.annotations.CascadeType.SAVE_UPDATE)
-    private Statistic statistic;
 
     public int getId() {
         return id;
@@ -79,13 +76,6 @@ public class Advertisement {
         this.category = category;
     }
 
-    public Statistic getStatistic() {
-        return statistic;
-    }
-
-    public void setStatistic(Statistic statistic) {
-        this.statistic = statistic;
-    }
 
     public String getState() {
         return state;
