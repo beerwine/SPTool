@@ -1,23 +1,38 @@
-import sptool.dao.AdvertisementDao;
-import sptool.dao.AdvertisementDaoImpl;
-import sptool.dao.CategoryDao;
-import sptool.dao.CategoryDaoImpl;
+import sptool.dao.*;
 import sptool.model.Advertisement;
-import sptool.model.Category;
+
+import sptool.model.Statistic;
 import sptool.util.Util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 
 /**
  * Created by sergey on 6/6/16.
  */
 public class Application {
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) throws ParseException {
 
-        AdvertisementDao dao = new AdvertisementDaoImpl();
-        dao.delete(1);
+        StatisticDao dao = new StatisticDaoImpl();
+        AdvertisementDao adDao = new AdvertisementDaoImpl();
+
+        Advertisement ad = adDao.getAdvertisementById(2);
+
+        Statistic st = new Statistic();
+        st.setPaid(1000);
+        st.setClicks(3000);
+
+//        st.setDate(new Date());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        Date date = sdf.parse("2016-06-05");
+
+        st.setDate(date);
+
+        dao.save(st, ad);
+
         Util.getSessionFactory().close();
 
 
