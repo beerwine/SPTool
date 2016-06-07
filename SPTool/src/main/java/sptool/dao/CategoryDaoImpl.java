@@ -23,14 +23,19 @@ public class CategoryDaoImpl implements CategoryDao {
     /**
      * Save new Category
      */
-    public void save(Category category) {
+    public void save(Category category) throws Exception {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-         session.save(category);
+        try
+        {
+            session.save(category);
+        }finally {
+            tx.commit();
+            session.close();
+        }
 
-        tx.commit();
-        session.close();
+
 
     }
 

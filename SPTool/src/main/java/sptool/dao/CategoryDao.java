@@ -9,7 +9,7 @@ import java.util.List;
  * DAO class for Category
  */
 public interface CategoryDao {
-    public void save(Category category);
+    public void save(Category category) throws Exception;
     public Category getCategoryById(int id);
     public List<Category> getAllCategories();
     public void updateCategory(Category category);

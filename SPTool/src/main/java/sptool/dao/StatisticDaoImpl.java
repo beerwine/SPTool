@@ -8,9 +8,11 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.transform.Transformers;
 
 import sptool.model.Advertisement;
+import sptool.model.Category;
 import sptool.model.Statistic;
 import sptool.util.Util;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -18,7 +20,7 @@ import java.util.List;
  */
 public class StatisticDaoImpl implements StatisticDao {
     @Override
-    public void save(Statistic statistic, Advertisement advertisement) {
+    public void save(Statistic statistic, Advertisement advertisement){
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
@@ -40,8 +42,79 @@ public class StatisticDaoImpl implements StatisticDao {
         }
 
         tx.commit();
-
         session.close();
+
+    }
+
+    public Statistic generalStatisticInPeriod(Advertisement ad, Date from, Date to)
+    {
+        Session session = Util.getSessionFactory().openSession();
+        Transaction tx = session.beginTransaction();
+
+        Criteria criteria = session.createCriteria(Statistic.class, "st").add(Restrictions.and(
+                Restrictions.ge("st.date", from),
+                Restrictions.le("st.date", to),
+                Restrictions.eq("st.add.id", ad.getId())
+        ));
+
+        List<Statistic> listOfStaistic = criteria.list();
+
+        Statistic statistic = new Statistic();
+
+        statistic.setAdd(ad);
+        statistic.setDate(new Date());
+
+        int clicks = 0;
+        int paid = 0;
+        for (Statistic st:
+             listOfStaistic) {
+
+            clicks += st.getClicks();
+            paid += st.getPaid();
+        }
+
+        statistic.setClicks(clicks);
+        statistic.setPaid(paid);
+
+        tx.commit();
+        session.close();
+        return statistic;
+    }
+
+    public Statistic generalStatisticInPeriodFromCategory(Category category, Date from, Date to)
+    {
+        Session session = Util.getSessionFactory().openSession();
+        Transaction tx = session.beginTransaction();
+
+        Criteria criteria = session.createCriteria(Statistic.class, "st")
+                .createAlias("st.add", "ad")
+                .createAlias("ad.category", "ct")
+                .add(Restrictions.and(
+                        Restrictions.ge("st.date", from),
+                        Restrictions.le("st.date", to),
+                        Restrictions.eq("ct.id", category.getId())
+                ));
+
+        List<Statistic> statistics = criteria.list();
+
+        Statistic statistic = new Statistic();
+
+        int paid = 0;
+        int clicks = 0;
+
+        for (Statistic st:
+             statistics) {
+            paid += st.getPaid();
+            clicks += st.getClicks();
+        }
+
+        statistic.setDate(new Date());
+        statistic.setClicks(clicks);
+        statistic.setPaid(paid);
+
+        tx.commit();
+        session.close();
+
+        return statistic;
     }
 }
-//        Criteria criteria = session.createCriteria(Advertisement.class, "ad").add(Restrictions.eq("ad.category.id", category.getId()));

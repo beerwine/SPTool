@@ -1,12 +1,15 @@
 import sptool.dao.*;
 import sptool.model.Advertisement;
 
+import sptool.model.Category;
 import sptool.model.Statistic;
 import sptool.util.Util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -15,23 +18,23 @@ import java.util.Date;
 public class Application {
     public static void main(String[] args) throws ParseException {
 
-        StatisticDao dao = new StatisticDaoImpl();
-        AdvertisementDao adDao = new AdvertisementDaoImpl();
 
-        Advertisement ad = adDao.getAdvertisementById(2);
-
-        Statistic st = new Statistic();
-        st.setPaid(1000);
-        st.setClicks(3000);
-
-//        st.setDate(new Date());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-        Date date = sdf.parse("2016-06-05");
+        Date from = sdf.parse("2015-03-01");
 
-        st.setDate(date);
+        CategoryDao dao = new CategoryDaoImpl();
 
-        dao.save(st, ad);
+        Category category = dao.getCategoryById(2);
+
+
+        StatisticDao sdao = new StatisticDaoImpl();
+
+
+
+        Statistic statistic = sdao.generalStatisticInPeriodFromCategory(category, from, new Date());
+
+        System.out.print(statistic.getClicks() + " " + statistic.getPaid());
 
         Util.getSessionFactory().close();
 
