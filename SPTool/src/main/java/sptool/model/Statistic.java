@@ -13,7 +13,6 @@ import sptool.model.Advertisement;
  */
 @Entity
 @Table(name = "statistic")
-@NamedQueries({@NamedQuery(name = "@THE_MOST_FREQ_CLICKED", query = "from Statistic s inner join ")})
 public class Statistic {
 
     @Id

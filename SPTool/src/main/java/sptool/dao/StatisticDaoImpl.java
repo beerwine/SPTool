@@ -4,8 +4,7 @@ import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.criterion.Projections;
-import org.hibernate.criterion.Restrictions;
+import org.hibernate.criterion.*;
 import org.hibernate.transform.Transformers;
 
 import sptool.model.Advertisement;
@@ -119,14 +118,30 @@ public class StatisticDaoImpl implements StatisticDao {
         return statistic;
     }
 
-    public void complicateQuery()
+    public void complicateQuery(Date from, Date to)
     {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-        Query q = session.getNamedQuery("@THE_MOST_FREQ_CLICKED");
+        Criteria criteria = session.createCriteria(Statistic.class)
+                .setProjection(Projections.projectionList()
+                .add(Projections.groupProperty("add.id"))
+                .add(Projections.max("clicks")));
 
-        List<Statistic> st = q.list();
+        //Get max from every advertisement
+        DetachedCriteria subCriteria = DetachedCriteria.forClass(Statistic.class)
+                .setProjection(Projections.projectionList()
+                .add(Projections.groupProperty("add.id"))
+                .add(Projections.max("clicks")));
+
+        //Get statistics in period
+        DetachedCriteria anotherCriteria = DetachedCriteria.forClass(Statistic.class)
+                .add(Restrictions.and(
+                        Restrictions.ge("date", from),
+                        Restrictions.le("date", to)
+                ));
+
+
         tx.commit();
         session.close();
     }

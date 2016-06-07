@@ -21,7 +21,7 @@ public class Application {
 
         StatisticDao dao = new StatisticDaoImpl();
 
-        dao.complicateQuery();
+        dao.complicateQuery(new Date(), new Date());
 
         Util.getSessionFactory().close();
 
