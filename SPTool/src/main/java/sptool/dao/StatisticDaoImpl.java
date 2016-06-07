@@ -1,6 +1,7 @@
 package sptool.dao;
 
 import org.hibernate.Criteria;
+import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Projections;
@@ -116,5 +117,17 @@ public class StatisticDaoImpl implements StatisticDao {
         session.close();
 
         return statistic;
+    }
+
+    public void complicateQuery()
+    {
+        Session session = Util.getSessionFactory().openSession();
+        Transaction tx = session.beginTransaction();
+
+        Query q = session.getNamedQuery("@THE_MOST_FREQ_CLICKED");
+
+        List<Statistic> st = q.list();
+        tx.commit();
+        session.close();
     }
 }

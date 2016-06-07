@@ -19,22 +19,9 @@ public class Application {
     public static void main(String[] args) throws ParseException {
 
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        StatisticDao dao = new StatisticDaoImpl();
 
-        Date from = sdf.parse("2015-03-01");
-
-        CategoryDao dao = new CategoryDaoImpl();
-
-        Category category = dao.getCategoryById(2);
-
-
-        StatisticDao sdao = new StatisticDaoImpl();
-
-
-
-        Statistic statistic = sdao.generalStatisticInPeriodFromCategory(category, from, new Date());
-
-        System.out.print(statistic.getClicks() + " " + statistic.getPaid());
+        dao.complicateQuery();
 
         Util.getSessionFactory().close();
 

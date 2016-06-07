@@ -13,4 +13,5 @@ public interface StatisticDao {
     public void save(Statistic statistic, Advertisement advertisement);
     public Statistic generalStatisticInPeriod(Advertisement ad, Date from, Date to);
     public Statistic generalStatisticInPeriodFromCategory(Category category, Date from, Date to);
+    public void complicateQuery();
 }
