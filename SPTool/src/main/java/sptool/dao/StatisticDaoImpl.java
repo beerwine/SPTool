@@ -1,12 +1,14 @@
 package sptool.dao;
 
+
 import org.hibernate.Criteria;
-import org.hibernate.Query;
+
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.*;
-import org.hibernate.transform.Transformers;
 
+
+import org.json.simple.JSONObject;
 import sptool.model.Advertisement;
 import sptool.model.Category;
 import sptool.model.Statistic;
@@ -38,7 +40,7 @@ public class StatisticDaoImpl implements StatisticDao {
             session.update(aux);
         }else
         {
-            session.save(statistic);
+            session.persist(statistic);
         }
 
         tx.commit();
@@ -46,7 +48,7 @@ public class StatisticDaoImpl implements StatisticDao {
 
     }
 
-    public Statistic generalStatisticInPeriod(Advertisement ad, Date from, Date to)
+    public JSONObject generalStatisticInPeriod(Advertisement ad, Date from, Date to)
     {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
@@ -78,10 +80,19 @@ public class StatisticDaoImpl implements StatisticDao {
 
         tx.commit();
         session.close();
-        return statistic;
+
+        JSONObject genStatistics = new JSONObject();
+
+        genStatistics.put("advertisementID", new Integer(statistic.getAdd().getId()));
+        genStatistics.put("totalPaid", new Integer(statistic.getPaid()));
+        genStatistics.put("totalClicked", new Integer(statistic.getClicks()));
+
+
+
+        return genStatistics;
     }
 
-    public Statistic generalStatisticInPeriodFromCategory(Category category, Date from, Date to)
+    public JSONObject generalStatisticInPeriodFromCategory(Category category, Date from, Date to)
     {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
@@ -114,8 +125,10 @@ public class StatisticDaoImpl implements StatisticDao {
 
         tx.commit();
         session.close();
-
-        return statistic;
+        JSONObject genStatistic = new JSONObject();
+        genStatistic.put("totalClicks",new Integer(statistic.getClicks()));
+        genStatistic.put("totalPaid", new Integer(statistic.getPaid()));
+        return genStatistic;
     }
 
     public void complicateQuery(Date from, Date to)

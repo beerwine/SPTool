@@ -1,22 +1,27 @@
 package sptool.controller;
 
+import org.hibernate.Criteria;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.criterion.Restrictions;
+import org.json.simple.JSONObject;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 import sptool.dao.*;
 import sptool.model.Advertisement;
 import sptool.model.Category;
 import sptool.model.Statistic;
+import sptool.util.Util;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by sergey on 6/5/16.
@@ -24,24 +29,31 @@ import java.util.List;
 @org.springframework.web.bind.annotation.RestController
 public class RestController {
 
+    private Validator getValidator()
+    {
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        return validatorFactory.getValidator();
+    }
+
+
     //-----------------------Retrieve category with certain ID--------------------------------------------------------//
     @RequestMapping(value = "/category/{id}", method = RequestMethod.GET)
-    public ResponseEntity<Category>  getCategory(@PathVariable("id") int id)
+    public ResponseEntity<JSONObject>  getCategory(@PathVariable("id") int id)
     {
         CategoryDao dao = new CategoryDaoImpl();
 
-        Category category = dao.getCategoryById(id);
+        JSONObject category = dao.getCategoryById(id);
 
         if (category == null)
         {
-            return new ResponseEntity<Category>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
         }
 
-        return new ResponseEntity<Category>(category, HttpStatus.OK);
+        return new ResponseEntity<JSONObject>(category, HttpStatus.OK);
     }
 
     //-----------------------Retrieve all categories------------------------------------------------------------------//
-    @RequestMapping(value = "/category", method = RequestMethod.GET)
+    @RequestMapping(value = "/category/", method = RequestMethod.GET)
     public ResponseEntity<List<Category>> listAllCategories()
     {
         CategoryDao dao = new CategoryDaoImpl();
@@ -51,46 +63,75 @@ public class RestController {
         if (categories.size() == 0)
             return new ResponseEntity<List<Category>>(HttpStatus.NOT_FOUND);
 
+        Iterator<Category> iter = categories.iterator();
+
+        while (iter.hasNext())
+            iter.next().setAds(new ArrayList<Advertisement>());
+
         return new ResponseEntity<List<Category>>(categories, HttpStatus.OK);
     }
 
     //-----------------------Create new category----------------------------------------------------------------------//
-    @RequestMapping(value = "/category", method = RequestMethod.POST, headers="Accept=application/json")
+    @RequestMapping(value = "/category/", method = RequestMethod.POST, headers="Accept=application/json")
     public ResponseEntity<Void> createCategory(@RequestBody Category category)
     {
 
-        CategoryDao dao = new CategoryDaoImpl();
+        Validator validator = getValidator();
+        Set<ConstraintViolation<Category>> validationErrors = validator.validate(category);
 
-        Category category1 = dao.getCategoryById(category.getId());
-
-        if (category1 == null)
+        if (!validationErrors.isEmpty())
         {
-            try
-            {
-                dao.save(category);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return new ResponseEntity<Void>(HttpStatus.BAD_REQUEST);
-
-            }
-            return new ResponseEntity<Void>(HttpStatus.CREATED);
+            return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
         }
 
-        return new ResponseEntity<Void>(HttpStatus.CONFLICT);
+        Session session = Util.getSessionFactory().getCurrentSession();
+        Transaction tx = session.beginTransaction();
+
+        Criteria criteria = session.createCriteria(Category.class)
+                .add(Restrictions.eq("name", category.getName()));
+
+        Category category1 = (Category) criteria.uniqueResult();
+
+        tx.commit();
+
+        if (category1 != null)
+        {
+            return new ResponseEntity<Void>(HttpStatus.CONFLICT);
+        }
+
+        CategoryDao dao = new CategoryDaoImpl();
+
+
+        dao.save(category);
+
+        return new ResponseEntity<Void>(HttpStatus.OK);
+
+
     }
 
     //---------------------------Update category----------------------------------------------------------------------//
     @RequestMapping(value = "/category/{id}", method = RequestMethod.PUT)
     public ResponseEntity<Void> updateCategory(@PathVariable("id") int id, @RequestBody Category category)
     {
+
         CategoryDao dao = new CategoryDaoImpl();
 
-        Category aux = dao.getCategoryById(id);
+        JSONObject ct = dao.getCategoryById(id);
 
-        if (aux != null)
+        if (ct != null)
         {
+            Validator validator = getValidator();
+            Set<ConstraintViolation<Category>> validationErrors = validator.validate(category);
+
+            if (!validationErrors.isEmpty())
+                return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
+
+            Category aux = new Category();
+
+            aux.setId(id);
             aux.setState(category.getState());
             aux.setName(category.getName());
+
             dao.updateCategory(aux);
             return new ResponseEntity<Void>(HttpStatus.OK);
         }
@@ -99,48 +140,50 @@ public class RestController {
     }
 
     //---------------------------Remove category----------------------------------------------------------------------//
-    @RequestMapping(value = "/category/{id}", method = RequestMethod.DELETE)
-    public ResponseEntity<Void> removeCategory(@PathVariable("id") int id)
-    {
-        CategoryDao dao = new CategoryDaoImpl();
-
-
-        Category category = dao.getCategoryById(id);
-
-        if (category != null)
-        {
-            dao.deleteCategory(id);
-            return new ResponseEntity<Void>(HttpStatus.OK);
-        }
-
-        return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
-    }
+//    @RequestMapping(value = "/category/{id}", method = RequestMethod.DELETE)
+//    public ResponseEntity<Void> removeCategory(@PathVariable("id") int id)
+//    {
+//        CategoryDao dao = new CategoryDaoImpl();
+//
+//
+//        Category category = dao.getCategoryById(id);
+//
+//        if (category != null)
+//        {
+//            dao.deleteCategory(id);
+//            return new ResponseEntity<Void>(HttpStatus.OK);
+//        }
+//
+//        return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
+//    }
 
     //---------------------------------Create advertisement-----------------------------------------------------------//
-    @RequestMapping(value = "/category/{id}/advertisement", method = RequestMethod.POST, headers="Accept=application/json")
-    public ResponseEntity<Void> createAd(@PathVariable("id") int id, @RequestBody Advertisement ad)
-    {
-        CategoryDao cdao = new CategoryDaoImpl();
-        Category category = cdao.getCategoryById(id);
-
-        if (category == null)
-        {
-            return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
-        }
-
-        ad.setCategory(category);
-
-        try
-        {
-            AdvertisementDao adao = new AdvertisementDaoImpl();
-            adao.save(ad);
-        } catch (Exception e) {
-            e.printStackTrace();
-            new ResponseEntity<Void>(HttpStatus.BAD_REQUEST);
-        }
-
-        return new ResponseEntity<Void>(HttpStatus.OK);
-    }
+//    @RequestMapping(value = "/category/{id}/advertisement/", method = RequestMethod.POST, headers="Accept=application/json")
+//    public ResponseEntity<Void> createAd(@PathVariable("id") int id, @RequestBody Advertisement ad)
+//    {
+//        CategoryDao cdao = new CategoryDaoImpl();
+//        Category category = cdao.getCategoryById(id);
+//
+//        if (category == null)
+//        {
+//            return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
+//        }
+//
+//        Validator validator = getValidator();
+//        Set<ConstraintViolation<Advertisement>> validationErrors = validator.validate(ad);
+//
+//        if (!validationErrors.isEmpty())
+//        {
+//            return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
+//        }
+//
+//        ad.setCategory(category);
+//        AdvertisementDao adao = new AdvertisementDaoImpl();
+//        adao.save(ad);
+//
+//
+//        return new ResponseEntity<Void>(HttpStatus.OK);
+//    }
     //-----------------------Retrieve advertisement with certain ID---------------------------------------------------//
     @RequestMapping(value = "/advertisement/{id}", method = RequestMethod.GET)
     public ResponseEntity<Advertisement> getAdById(@PathVariable("id") int id)
@@ -153,28 +196,30 @@ public class RestController {
         {
             return new ResponseEntity<Advertisement>(HttpStatus.NOT_FOUND);
         }
+        ad.setStatistics(new ArrayList<Statistic>());
+        ad.getCategory().setAds(new ArrayList<Advertisement>());
         return new ResponseEntity<Advertisement>(ad, HttpStatus.OK);
     }
 
 
     //-----------------------Retrieve advertisement from category-----------------------------------------------------//
-    @RequestMapping(value = "/category/{id}/advertisement", method = RequestMethod.GET)
-    public ResponseEntity<List<Advertisement>> getAdsFromCategory(@PathVariable("id") int id, @RequestParam(value = "states") List<String> states)
-    {
-
-        CategoryDao dao = new CategoryDaoImpl();
-        Category category = dao.getCategoryById(id);
-        if (category == null)
-        {
-            return new ResponseEntity<List<Advertisement>>(HttpStatus.NOT_FOUND);
-        }
-
-        AdvertisementDao adao = new AdvertisementDaoImpl();
-
-        List<Advertisement> ads = adao.getListOfAdds(category, states);
-
-        return new ResponseEntity<List<Advertisement>>(ads, HttpStatus.OK);
-    }
+//    @RequestMapping(value = "/category/{id}/advertisement", method = RequestMethod.GET)
+//    public ResponseEntity<List<Advertisement>> getAdsFromCategory(@PathVariable("id") int id, @RequestParam(value = "states") List<String> states)
+//    {
+//
+//        CategoryDao dao = new CategoryDaoImpl();
+//        Category category = dao.getCategoryById(id);
+//        if (category == null)
+//        {
+//            return new ResponseEntity<List<Advertisement>>(HttpStatus.NOT_FOUND);
+//        }
+//
+//        AdvertisementDao adao = new AdvertisementDaoImpl();
+//
+//        List<Advertisement> ads = adao.getListOfAdds(category, states);
+//
+//        return new ResponseEntity<List<Advertisement>>(ads, HttpStatus.OK);
+//    }
 
     //-----------------------------------Remove ad with ID------------------------------------------------------------//
     @RequestMapping(value = "/advertisement/{id}", method = RequestMethod.DELETE)
@@ -196,7 +241,7 @@ public class RestController {
 
     //------------------------------------------Create statistic about ad---------------------------------------------//
     @RequestMapping(value = "/advertisement/{id}/statistic", method = RequestMethod.POST)
-    public ResponseEntity<Void> createStatistic(@PathVariable("id") int id, @RequestBody(required = false) Statistic statistic)
+    public ResponseEntity<Void> createStatistic(@PathVariable("id") int id, @RequestBody Statistic statistic)
     {
         AdvertisementDao dao = new AdvertisementDaoImpl();
 
@@ -207,15 +252,17 @@ public class RestController {
             return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
         }
 
+        Validator validator = getValidator();
+        Set<ConstraintViolation<Statistic>> validationErrors = validator.validate(statistic);
+
+        if (!validationErrors.isEmpty())
+        {
+            return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
+        }
+
+
         StatisticDao sdao = new StatisticDaoImpl();
 
-        if (statistic == null)
-        {
-            statistic = new Statistic();
-            statistic.setDate(new Date());
-            statistic.setClicks(0);
-            statistic.setPaid(0);
-        }
 
         statistic.setAdd(ad);
 
@@ -227,8 +274,7 @@ public class RestController {
 
     //-------------------------General statistic about advertisement--------------------------------------------------//
     @RequestMapping(value = "/advertisement/{id}/general", method = RequestMethod.GET)
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
-    public ResponseEntity<Statistic> generalStatistic(@PathVariable("id") int id, @RequestParam(value = "from") String from, @RequestParam(value = "to") String to)
+    public ResponseEntity<JSONObject> generalStatistic(@PathVariable("id") int id, @RequestParam(value = "from") String from, @RequestParam(value = "to") String to)
     {
 
         AdvertisementDao dao = new AdvertisementDaoImpl();
@@ -237,7 +283,7 @@ public class RestController {
 
         if (ad == null)
         {
-            return new ResponseEntity<Statistic>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
         }
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -249,57 +295,57 @@ public class RestController {
         {
             dateFrom = sdf.parse(from);
         } catch (ParseException e) {
-            dateFrom = new Date();
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
         }
 
         try {
             dateTo = sdf.parse(to);
         } catch (ParseException e) {
-            dateTo = new Date();
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
         }
 
         StatisticDao sdao = new StatisticDaoImpl();
 
-        Statistic statistic = sdao.generalStatisticInPeriod(ad, dateFrom, dateTo);
+        JSONObject statistic = sdao.generalStatisticInPeriod(ad, dateFrom, dateTo);
 
-        return new ResponseEntity<Statistic>(statistic, HttpStatus.OK);
+        return new ResponseEntity<JSONObject>(statistic, HttpStatus.OK);
     }
 
     //------------------------Statistic about ads in category---------------------------------------------------------//
-    @RequestMapping(value = "/category/{id}/statistic", method = RequestMethod.GET)
-    public ResponseEntity<Statistic> generalStatisticAboutCategory(@PathVariable("id") int id, @RequestParam(value = "from") String from, @RequestParam(value = "to") String to)
-    {
-        CategoryDao dao = new CategoryDaoImpl();
-        Category category = dao.getCategoryById(id);
-
-        if (category == null)
-        {
-            return new ResponseEntity<Statistic>(HttpStatus.NOT_FOUND);
-        }
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-        Date dateFrom;
-        Date dateTo;
-
-        try
-        {
-            dateFrom = sdf.parse(from);
-        } catch (ParseException e) {
-            dateFrom = new Date();
-        }
-        try {
-            dateTo = sdf.parse(to);
-        } catch (ParseException e) {
-            dateTo = new Date();
-        }
-
-        StatisticDao sdao = new StatisticDaoImpl();
-
-        Statistic statistic = sdao.generalStatisticInPeriodFromCategory(category, dateFrom, dateTo);
-
-        return new ResponseEntity<Statistic>(statistic, HttpStatus.OK);
-    }
+//    @RequestMapping(value = "/category/{id}/statistic", method = RequestMethod.GET)
+//    public ResponseEntity<JSONObject> generalStatisticAboutCategory(@PathVariable("id") int id, @RequestParam(value = "from") String from, @RequestParam(value = "to") String to)
+//    {
+//        CategoryDao dao = new CategoryDaoImpl();
+//        Category category = dao.getCategoryById(id);
+//
+//        if (category == null)
+//        {
+//            return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
+//        }
+//
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//
+//        Date dateFrom;
+//        Date dateTo;
+//
+//        try
+//        {
+//            dateFrom = sdf.parse(from);
+//        } catch (ParseException e) {
+//            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
+//        }
+//        try {
+//            dateTo = sdf.parse(to);
+//        } catch (ParseException e) {
+//            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
+//        }
+//
+//        StatisticDao sdao = new StatisticDaoImpl();
+//
+//        JSONObject statistic = sdao.generalStatisticInPeriodFromCategory(category, dateFrom, dateTo);
+//
+//        return new ResponseEntity<JSONObject>(statistic, HttpStatus.OK);
+//    }
 
 
 }

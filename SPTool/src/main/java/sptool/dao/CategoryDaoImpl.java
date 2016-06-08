@@ -5,6 +5,8 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import sptool.model.Advertisement;
 import sptool.model.Category;
 import sptool.util.Util;
@@ -23,19 +25,14 @@ public class CategoryDaoImpl implements CategoryDao {
     /**
      * Save new Category
      */
-    public void save(Category category) throws Exception {
+    public void save(Category category)  {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-        try
-        {
-            session.save(category);
-        }finally {
-            tx.commit();
-            session.close();
-        }
+        session.persist(category);
 
-
+        tx.commit();
+        session.close();
 
     }
 
@@ -45,17 +42,48 @@ public class CategoryDaoImpl implements CategoryDao {
      * @return Category object
      */
 
-    public Category getCategoryById(int id) {
+    public JSONObject getCategoryById(int id) {
         Session session = Util.getSessionFactory().openSession();
 
         Transaction tx = session.beginTransaction();
 
         Category category = (Category) session.get(Category.class, id);
 
+        JSONObject jsonCategory = null;
+
+        if (category != null)
+        {
+            jsonCategory = new JSONObject();
+
+            jsonCategory.put("id", new Integer(category.getId()));
+
+            jsonCategory.put("name", category.getName());
+
+            jsonCategory.put("state", category.getState());
+
+            JSONArray ads = new JSONArray();
+
+            for (Advertisement ad:
+                 category.getAds()) {
+
+                JSONObject advertisement = new JSONObject();
+
+                advertisement.put("id", new Integer(ad.getId()));
+                advertisement.put("state", ad.getState());
+                advertisement.put("name", ad.getName());
+                advertisement.put("pucture", ad.getPictureUrl());
+                advertisement.put("url", ad.getLinkUrl());
+
+                ads.add(advertisement);
+            }
+            jsonCategory.put("ads", ads);
+
+        }
+
 
         tx.commit();
         session.close();
-        return category;
+        return jsonCategory;
     }
 
     /**
@@ -86,14 +114,20 @@ public class CategoryDaoImpl implements CategoryDao {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-        Category ct = (Category) session.get(Category.class, category.getId());
+        Category category1 = (Category) session.get(Category.class, category.getId());
 
-        if (ct != null)
+        if (!category.getState().equals(category1.getState()))
         {
-            ct.setName(category.getName());
-            ct.setState(category.getState());
-            session.update(ct);
+            category1.setState(category.getState());
+            for (Advertisement ad:
+                 category1.getAds()) {
+                ad.setState(category1.getState());
+            }
         }
+
+        category1.setName(category.getName());
+
+        session.update(category1);
 
         tx.commit();
         session.close();
@@ -111,8 +145,7 @@ public class CategoryDaoImpl implements CategoryDao {
 
         Category category = (Category) session.get(Category.class, id);
 
-        if (category != null)
-            session.delete(category);
+        session.delete(category);
 
         tx.commit();
         session.close();

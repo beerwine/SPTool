@@ -1,15 +1,21 @@
 package sptool.model;
 
 import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.Check;
+import org.hibernate.validator.constraints.URL;
 
 import javax.persistence.*;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import java.util.List;
 
 /**
  * Created by sergey on 6/5/16.
  * Maps class Advertisement on the table advertisement
  */
 @Entity
-@Table(name = "advertisement")
+@Table(name = "advertisement", schema = "public")
 public class Advertisement {
 
     @Id
@@ -18,20 +24,30 @@ public class Advertisement {
     private int id;
 
     @Column(name = "name")
+    @NotNull
     private String name;
 
     @Column(name = "picture_url")
+    @NotNull
+    @URL
     private String pictureUrl;
 
     @Column(name = "link_url")
+    @NotNull
+    @URL
     private String linkUrl;
 
     @Column(name = "state")
-    private String state;
+    @Pattern(regexp = "(Active|Stopped|Pending)")
+    private String state = "Stopped";
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_category", nullable = false)
     private Category category;
+
+    @OneToMany(mappedBy = "add", cascade = CascadeType.ALL)
+    @Valid
+    private List<Statistic> statistics;
 
 
 
@@ -83,5 +99,13 @@ public class Advertisement {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public List<Statistic> getStatistics() {
+        return statistics;
+    }
+
+    public void setStatistics(List<Statistic> statistics) {
+        this.statistics = statistics;
     }
 }

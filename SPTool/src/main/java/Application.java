@@ -1,3 +1,5 @@
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import sptool.dao.*;
 import sptool.model.Advertisement;
 
@@ -5,11 +7,16 @@ import sptool.model.Category;
 import sptool.model.Statistic;
 import sptool.util.Util;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -19,9 +26,14 @@ public class Application {
     public static void main(String[] args) throws ParseException {
 
 
-        StatisticDao dao = new StatisticDaoImpl();
+        Session session = Util.getSessionFactory().openSession();
+        Transaction tx = session.beginTransaction();
 
-        dao.complicateQuery(new Date(), new Date());
+
+
+
+        tx.commit();
+        session.close();
 
         Util.getSessionFactory().close();
 

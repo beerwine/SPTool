@@ -1,8 +1,12 @@
 package sptool.model;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.annotations.LazyCollection;
 
 import javax.persistence.*;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import java.util.List;
 import java.util.Set;
 
@@ -11,7 +15,7 @@ import java.util.Set;
  * Maps class Category on the table category
  */
 @Entity
-@Table(name = "category")
+@Table(name = "category", schema = "public")
 @NamedQueries({@NamedQuery(name = "@ALL_CATEGORIES", query = "from Category")
 })
 public class Category {
@@ -22,11 +26,16 @@ public class Category {
     private int id;
 
     @Column(name = "name")
+    @NotNull
     private String name;
 
     @Column(name = "state")
-    private String state;
+    @Pattern(regexp = "(Active|Stopped|Pending)")
+    private String state = "Stopped";
 
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Advertisement> ads;
 
 
 
@@ -54,5 +63,13 @@ public class Category {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public List<Advertisement> getAds() {
+        return ads;
+    }
+
+    public void setAds(List<Advertisement> ads) {
+        this.ads = ads;
     }
 }

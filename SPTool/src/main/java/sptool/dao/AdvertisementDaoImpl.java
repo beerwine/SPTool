@@ -17,19 +17,14 @@ import java.util.List;
  */
 public class AdvertisementDaoImpl implements AdvertisementDao {
     @Override
-    public void save(Advertisement advertisement) throws Exception{
+    public void save(Advertisement advertisement) {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-        try
-        {
-            session.save(advertisement);
-        }finally {
-            tx.commit();
-            session.close();
-        }
+        session.persist(advertisement);
 
-
+        tx.commit();
+        session.close();
     }
 
     @Override

@@ -5,14 +5,17 @@ package sptool.model;
 import javax.persistence.*;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
+
+import org.springframework.format.annotation.DateTimeFormat;
 import sptool.model.Advertisement;
 /**
  * Created by sergey on 6/5/16.
  * Maps class Statistic on the table statistic
  */
 @Entity
-@Table(name = "statistic")
+@Table(name = "statistic", schema = "public")
 public class Statistic {
 
     @Id
@@ -21,13 +24,17 @@ public class Statistic {
     private int id;
 
     @Column(name = "date")
+    @NotNull
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date date;
 
     @Column(name = "clicks")
+    @NotNull
     private int clicks;
 
     @Column(name = "paid")
-    private int paid;
+    @NotNull
+    private int paid ;
 
 
     @ManyToOne(optional = false)
