@@ -1,6 +1,7 @@
 package sptool.controller;
 
 import org.hibernate.Criteria;
+import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
@@ -92,7 +93,7 @@ public class RestController {
 
     //-----------------------Create new category----------------------------------------------------------------------//
     @RequestMapping(value = "/category/", method = RequestMethod.POST, headers="Accept=application/json")
-    public ResponseEntity<Void> createCategory(@RequestBody Category category)
+    public ResponseEntity<String> createCategory(@RequestBody Category category)
     {
 
         Validator validator = getValidator();
@@ -100,22 +101,25 @@ public class RestController {
 
         if (!validationErrors.isEmpty())
         {
-            return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Here was some error in Category object." +
+                    "Please, check all fields.");
+
         }
 
         Session session = Util.getSessionFactory().getCurrentSession();
         Transaction tx = session.beginTransaction();
 
-        Criteria criteria = session.createCriteria(Category.class)
-                .add(Restrictions.eq("name", category.getName()));
+        Query query = session.createQuery("from Category where name = :sameName");
+        query.setParameter("sameName", category.getName());
 
-        Category category1 = (Category) criteria.uniqueResult();
+
+        Category category1 = (Category) query.uniqueResult();
 
         tx.commit();
 
         if (category1 != null)
         {
-            return new ResponseEntity<Void>(HttpStatus.CONFLICT);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Category with this name already exists.");
         }
 
         CategoryDao dao = new CategoryDaoImpl();
@@ -123,13 +127,13 @@ public class RestController {
 
         dao.save(category);
 
-        return new ResponseEntity<Void>(HttpStatus.OK);
+        return  ResponseEntity.ok("New category has beed created");
 
 
     }
 
     //---------------------------Update category----------------------------------------------------------------------//
-    @RequestMapping(value = "/category/{id}", method = RequestMethod.POST)
+    @RequestMapping(value = "/category/{id}", method = RequestMethod.PUT)
     public ResponseEntity<Void> updateCategory(@PathVariable("id") int id, @RequestBody Category category)
     {
 
@@ -176,7 +180,7 @@ public class RestController {
     }
 
     //---------------------------------Create advertisement-----------------------------------------------------------//
-    @RequestMapping(value = "/category/{id}/advertisement/", method = RequestMethod.PUT, headers="Accept=application/json")
+    @RequestMapping(value = "/category/{id}/advertisement/", method = RequestMethod.POST, headers="Accept=application/json")
     public ResponseEntity<Void> createAd(@PathVariable("id") int id, @RequestBody Advertisement ad)
     {
         CategoryDao cdao = new CategoryDaoImpl();
@@ -215,8 +219,6 @@ public class RestController {
             return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
         }
 
-        ad.setStatistics(new ArrayList<Statistic>());
-        ad.getCategory().setAds(new ArrayList<Advertisement>());
 
         JSONObject adInfo = new JSONObject();
 

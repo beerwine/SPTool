@@ -9,6 +9,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by sergey on 6/5/16.
@@ -47,7 +48,7 @@ public class Advertisement {
 
     @OneToMany(mappedBy = "add", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Valid
-    private List<Statistic> statistics;
+    private Set<Statistic> statistics;
 
 
 
@@ -101,11 +102,12 @@ public class Advertisement {
         this.state = state;
     }
 
-    public List<Statistic> getStatistics() {
+
+    public Set<Statistic> getStatistics() {
         return statistics;
     }
 
-    public void setStatistics(List<Statistic> statistics) {
+    public void setStatistics(Set<Statistic> statistics) {
         this.statistics = statistics;
     }
 }

@@ -35,7 +35,7 @@ public class Category {
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonIgnore
-    private List<Advertisement> ads;
+    private Set<Advertisement> ads;
 
 
 
@@ -65,11 +65,11 @@ public class Category {
         this.state = state;
     }
 
-    public List<Advertisement> getAds() {
+    public Set<Advertisement> getAds() {
         return ads;
     }
 
-    public void setAds(List<Advertisement> ads) {
+    public void setAds(Set<Advertisement> ads) {
         this.ads = ads;
     }
 }
