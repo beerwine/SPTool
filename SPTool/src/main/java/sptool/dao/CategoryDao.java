@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface CategoryDao {
     public void save(Category category);
-    public JSONObject getCategoryById(int id);
+    public Category getCategoryById(int id);
     public List<Category> getAllCategories();
     public void updateCategory(Category category);
     public void deleteCategory(int id);

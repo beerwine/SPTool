@@ -4,6 +4,7 @@ import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -42,33 +43,51 @@ public class RestController {
     {
         CategoryDao dao = new CategoryDaoImpl();
 
-        JSONObject category = dao.getCategoryById(id);
+        Category category = dao.getCategoryById(id);
 
         if (category == null)
         {
             return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
         }
 
-        return new ResponseEntity<JSONObject>(category, HttpStatus.OK);
+        JSONObject categoryInfo = new JSONObject();
+        categoryInfo.put("id", category.getId());
+        categoryInfo.put("state", category.getState());
+        categoryInfo.put("name", category.getName());
+        categoryInfo.put("totalAds", category.getAds().size());
+
+        return new ResponseEntity<JSONObject>(categoryInfo, HttpStatus.OK);
     }
 
     //-----------------------Retrieve all categories------------------------------------------------------------------//
     @RequestMapping(value = "/category/", method = RequestMethod.GET)
-    public ResponseEntity<List<Category>> listAllCategories()
+    public ResponseEntity<JSONArray> listAllCategories()
     {
         CategoryDao dao = new CategoryDaoImpl();
 
         List<Category> categories = dao.getAllCategories();
 
         if (categories.size() == 0)
-            return new ResponseEntity<List<Category>>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<JSONArray>(HttpStatus.NOT_FOUND);
 
-        Iterator<Category> iter = categories.iterator();
 
-        while (iter.hasNext())
-            iter.next().setAds(new ArrayList<Advertisement>());
 
-        return new ResponseEntity<List<Category>>(categories, HttpStatus.OK);
+        JSONArray allCategories = new JSONArray();
+
+
+        for (Category ct:
+             categories) {
+            JSONObject aux = new JSONObject();
+
+            aux.put("id", ct.getId());
+            aux.put("state", ct.getState());
+            aux.put("name", ct.getName());
+            aux.put("totalAds", ct.getAds().size());
+
+            allCategories.add(aux);
+        }
+
+        return new ResponseEntity<JSONArray>(allCategories, HttpStatus.OK);
     }
 
     //-----------------------Create new category----------------------------------------------------------------------//
@@ -110,13 +129,13 @@ public class RestController {
     }
 
     //---------------------------Update category----------------------------------------------------------------------//
-    @RequestMapping(value = "/category/{id}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/category/{id}", method = RequestMethod.POST)
     public ResponseEntity<Void> updateCategory(@PathVariable("id") int id, @RequestBody Category category)
     {
 
         CategoryDao dao = new CategoryDaoImpl();
 
-        JSONObject ct = dao.getCategoryById(id);
+        Category ct = dao.getCategoryById(id);
 
         if (ct != null)
         {
@@ -126,13 +145,12 @@ public class RestController {
             if (!validationErrors.isEmpty())
                 return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
 
-            Category aux = new Category();
 
-            aux.setId(id);
-            aux.setState(category.getState());
-            aux.setName(category.getName());
+            ct.setId(id);
+            ct.setState(category.getState());
+            ct.setName(category.getName());
 
-            dao.updateCategory(aux);
+            dao.updateCategory(ct);
             return new ResponseEntity<Void>(HttpStatus.OK);
         }
 
@@ -140,53 +158,53 @@ public class RestController {
     }
 
     //---------------------------Remove category----------------------------------------------------------------------//
-//    @RequestMapping(value = "/category/{id}", method = RequestMethod.DELETE)
-//    public ResponseEntity<Void> removeCategory(@PathVariable("id") int id)
-//    {
-//        CategoryDao dao = new CategoryDaoImpl();
-//
-//
-//        Category category = dao.getCategoryById(id);
-//
-//        if (category != null)
-//        {
-//            dao.deleteCategory(id);
-//            return new ResponseEntity<Void>(HttpStatus.OK);
-//        }
-//
-//        return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
-//    }
+    @RequestMapping(value = "/category/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity<Void> removeCategory(@PathVariable("id") int id)
+    {
+        CategoryDao dao = new CategoryDaoImpl();
+
+
+        Category category = dao.getCategoryById(id);
+
+        if (category != null)
+        {
+            dao.deleteCategory(id);
+            return new ResponseEntity<Void>(HttpStatus.OK);
+        }
+
+        return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
+    }
 
     //---------------------------------Create advertisement-----------------------------------------------------------//
-//    @RequestMapping(value = "/category/{id}/advertisement/", method = RequestMethod.POST, headers="Accept=application/json")
-//    public ResponseEntity<Void> createAd(@PathVariable("id") int id, @RequestBody Advertisement ad)
-//    {
-//        CategoryDao cdao = new CategoryDaoImpl();
-//        Category category = cdao.getCategoryById(id);
-//
-//        if (category == null)
-//        {
-//            return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
-//        }
-//
-//        Validator validator = getValidator();
-//        Set<ConstraintViolation<Advertisement>> validationErrors = validator.validate(ad);
-//
-//        if (!validationErrors.isEmpty())
-//        {
-//            return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
-//        }
-//
-//        ad.setCategory(category);
-//        AdvertisementDao adao = new AdvertisementDaoImpl();
-//        adao.save(ad);
-//
-//
-//        return new ResponseEntity<Void>(HttpStatus.OK);
-//    }
+    @RequestMapping(value = "/category/{id}/advertisement/", method = RequestMethod.PUT, headers="Accept=application/json")
+    public ResponseEntity<Void> createAd(@PathVariable("id") int id, @RequestBody Advertisement ad)
+    {
+        CategoryDao cdao = new CategoryDaoImpl();
+        Category category = cdao.getCategoryById(id);
+
+        if (category == null)
+        {
+            return new ResponseEntity<Void>(HttpStatus.NOT_FOUND);
+        }
+
+        Validator validator = getValidator();
+        Set<ConstraintViolation<Advertisement>> validationErrors = validator.validate(ad);
+
+        if (!validationErrors.isEmpty())
+        {
+            return new ResponseEntity<Void>(HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        ad.setCategory(category);
+        AdvertisementDao adao = new AdvertisementDaoImpl();
+        adao.save(ad);
+
+
+        return new ResponseEntity<Void>(HttpStatus.OK);
+    }
     //-----------------------Retrieve advertisement with certain ID---------------------------------------------------//
     @RequestMapping(value = "/advertisement/{id}", method = RequestMethod.GET)
-    public ResponseEntity<Advertisement> getAdById(@PathVariable("id") int id)
+    public ResponseEntity<JSONObject> getAdById(@PathVariable("id") int id)
     {
         AdvertisementDao dao = new AdvertisementDaoImpl();
 
@@ -194,32 +212,77 @@ public class RestController {
 
         if (ad == null)
         {
-            return new ResponseEntity<Advertisement>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
         }
+
         ad.setStatistics(new ArrayList<Statistic>());
         ad.getCategory().setAds(new ArrayList<Advertisement>());
-        return new ResponseEntity<Advertisement>(ad, HttpStatus.OK);
+
+        JSONObject adInfo = new JSONObject();
+
+        adInfo.put("id", ad.getId());
+        adInfo.put("picture", ad.getPictureUrl());
+        adInfo.put("url", ad.getLinkUrl());
+        adInfo.put("state", ad.getState());
+        adInfo.put("name", ad.getName());
+        adInfo.put("category", ad.getCategory().getId());
+
+        JSONArray statistics = new JSONArray();
+
+        for (Statistic st:
+             ad.getStatistics()) {
+            JSONObject statistic = new JSONObject();
+
+            statistic.put("id", st.getId());
+            statistic.put("paid", st.getPaid());
+            statistic.put("clicks", st.getClicks());
+            statistic.put("date", st.getDate());
+
+            statistics.add(statistic);
+        }
+
+        adInfo.put("statistics", statistics);
+
+        return new ResponseEntity<JSONObject>(adInfo, HttpStatus.OK);
     }
 
 
     //-----------------------Retrieve advertisement from category-----------------------------------------------------//
-//    @RequestMapping(value = "/category/{id}/advertisement", method = RequestMethod.GET)
-//    public ResponseEntity<List<Advertisement>> getAdsFromCategory(@PathVariable("id") int id, @RequestParam(value = "states") List<String> states)
-//    {
-//
-//        CategoryDao dao = new CategoryDaoImpl();
-//        Category category = dao.getCategoryById(id);
-//        if (category == null)
-//        {
-//            return new ResponseEntity<List<Advertisement>>(HttpStatus.NOT_FOUND);
-//        }
-//
-//        AdvertisementDao adao = new AdvertisementDaoImpl();
-//
-//        List<Advertisement> ads = adao.getListOfAdds(category, states);
-//
-//        return new ResponseEntity<List<Advertisement>>(ads, HttpStatus.OK);
-//    }
+    @RequestMapping(value = "/category/{id}/advertisement", method = RequestMethod.GET)
+    public ResponseEntity<JSONArray> getAdsFromCategory(@PathVariable("id") int id, @RequestParam(value = "states") List<String> states)
+    {
+
+        CategoryDao dao = new CategoryDaoImpl();
+
+        Category category = dao.getCategoryById(id);
+
+        if (category == null)
+        {
+            return new ResponseEntity<JSONArray>(HttpStatus.NOT_FOUND);
+        }
+
+        AdvertisementDao adao = new AdvertisementDaoImpl();
+
+
+        List<Advertisement> ads = adao.getListOfAdds(category, states);
+
+        JSONArray adsFromCategory = new JSONArray();
+
+        for (Advertisement advertisement:
+             ads) {
+            JSONObject aux = new JSONObject();
+
+            aux.put("id", advertisement.getId());
+            aux.put("name", advertisement.getName());
+            aux.put("picture", advertisement.getPictureUrl());
+            aux.put("url", advertisement.getLinkUrl());
+            aux.put("state", advertisement.getState());
+
+            adsFromCategory.add(aux);
+        }
+
+        return new ResponseEntity<JSONArray>(adsFromCategory, HttpStatus.OK);
+    }
 
     //-----------------------------------Remove ad with ID------------------------------------------------------------//
     @RequestMapping(value = "/advertisement/{id}", method = RequestMethod.DELETE)
@@ -312,40 +375,70 @@ public class RestController {
     }
 
     //------------------------Statistic about ads in category---------------------------------------------------------//
-//    @RequestMapping(value = "/category/{id}/statistic", method = RequestMethod.GET)
-//    public ResponseEntity<JSONObject> generalStatisticAboutCategory(@PathVariable("id") int id, @RequestParam(value = "from") String from, @RequestParam(value = "to") String to)
-//    {
-//        CategoryDao dao = new CategoryDaoImpl();
-//        Category category = dao.getCategoryById(id);
-//
-//        if (category == null)
-//        {
-//            return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
-//        }
-//
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//
-//        Date dateFrom;
-//        Date dateTo;
-//
-//        try
-//        {
-//            dateFrom = sdf.parse(from);
-//        } catch (ParseException e) {
-//            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
-//        }
-//        try {
-//            dateTo = sdf.parse(to);
-//        } catch (ParseException e) {
-//            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
-//        }
-//
-//        StatisticDao sdao = new StatisticDaoImpl();
-//
-//        JSONObject statistic = sdao.generalStatisticInPeriodFromCategory(category, dateFrom, dateTo);
-//
-//        return new ResponseEntity<JSONObject>(statistic, HttpStatus.OK);
-//    }
+    @RequestMapping(value = "/category/{id}/statistic", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> generalStatisticAboutCategory(@PathVariable("id") int id, @RequestParam(value = "from") String from, @RequestParam(value = "to") String to)
+    {
+        CategoryDao dao = new CategoryDaoImpl();
+        Category category = dao.getCategoryById(id);
+
+        if (category == null)
+        {
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_FOUND);
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        Date dateFrom;
+        Date dateTo;
+
+        try
+        {
+            dateFrom = sdf.parse(from);
+        } catch (ParseException e) {
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
+        }
+        try {
+            dateTo = sdf.parse(to);
+        } catch (ParseException e) {
+            return new ResponseEntity<JSONObject>(HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        StatisticDao sdao = new StatisticDaoImpl();
+
+        JSONObject statistic = sdao.generalStatisticInPeriodFromCategory(category, dateFrom, dateTo);
+
+        return new ResponseEntity<JSONObject>(statistic, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/category/frequently", method = RequestMethod.GET)
+    public ResponseEntity<JSONArray> theMostFrequentlyClicked(@RequestParam(name = "from") String from, @RequestParam(name = "to") String to)
+    {
+        Date dateFrom;
+        Date dateTo;
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        try
+        {
+            dateFrom = sdf.parse(from);
+        } catch (ParseException e) {
+            return new ResponseEntity<JSONArray>(HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        try {
+            dateTo = sdf.parse(to);
+
+        } catch (ParseException e) {
+            return new ResponseEntity<JSONArray>(HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        StatisticDao dao = new StatisticDaoImpl();
+
+        JSONArray jArray = dao.complicateQuery(dateFrom, dateTo);
+
+
+        return new ResponseEntity<JSONArray>(jArray, HttpStatus.OK);
+    }
 
 
 }

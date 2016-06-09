@@ -1,5 +1,6 @@
 package sptool.dao;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import sptool.model.Advertisement;
 import sptool.model.Category;
@@ -14,5 +15,5 @@ public interface StatisticDao {
     public void save(Statistic statistic, Advertisement advertisement);
     public JSONObject generalStatisticInPeriod(Advertisement ad, Date from, Date to);
     public JSONObject generalStatisticInPeriodFromCategory(Category category, Date from, Date to);
-    public void complicateQuery(Date from, Date to);
+    public JSONArray complicateQuery(Date from, Date to);
 }

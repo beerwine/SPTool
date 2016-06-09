@@ -45,7 +45,7 @@ public class Advertisement {
     @JoinColumn(name = "id_category", nullable = false)
     private Category category;
 
-    @OneToMany(mappedBy = "add", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "add", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Valid
     private List<Statistic> statistics;
 

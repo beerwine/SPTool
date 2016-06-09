@@ -26,14 +26,13 @@ public class Application {
     public static void main(String[] args) throws ParseException {
 
 
-        Session session = Util.getSessionFactory().openSession();
-        Transaction tx = session.beginTransaction();
 
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date from = sdf.parse("2015-03-16");
+        Date to = sdf.parse("2016-06-10");
 
-
-
-        tx.commit();
-        session.close();
+        StatisticDao dao = new StatisticDaoImpl();
+        dao.complicateQuery(from, to);
 
         Util.getSessionFactory().close();
 

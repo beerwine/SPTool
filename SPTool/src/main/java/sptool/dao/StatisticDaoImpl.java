@@ -3,17 +3,20 @@ package sptool.dao;
 
 import org.hibernate.Criteria;
 
+import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.*;
 
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import sptool.model.Advertisement;
 import sptool.model.Category;
 import sptool.model.Statistic;
 import sptool.util.Util;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -61,10 +64,6 @@ public class StatisticDaoImpl implements StatisticDao {
 
         List<Statistic> listOfStaistic = criteria.list();
 
-        Statistic statistic = new Statistic();
-
-        statistic.setAdd(ad);
-        statistic.setDate(new Date());
 
         int clicks = 0;
         int paid = 0;
@@ -75,19 +74,12 @@ public class StatisticDaoImpl implements StatisticDao {
             paid += st.getPaid();
         }
 
-        statistic.setClicks(clicks);
-        statistic.setPaid(paid);
+        JSONObject genStatistics = new JSONObject();
+        genStatistics.put("totalPaid", new Integer(paid));
+        genStatistics.put("totalClicked", new Integer(clicks));
 
         tx.commit();
         session.close();
-
-        JSONObject genStatistics = new JSONObject();
-
-        genStatistics.put("advertisementID", new Integer(statistic.getAdd().getId()));
-        genStatistics.put("totalPaid", new Integer(statistic.getPaid()));
-        genStatistics.put("totalClicked", new Integer(statistic.getClicks()));
-
-
 
         return genStatistics;
     }
@@ -108,8 +100,6 @@ public class StatisticDaoImpl implements StatisticDao {
 
         List<Statistic> statistics = criteria.list();
 
-        Statistic statistic = new Statistic();
-
         int paid = 0;
         int clicks = 0;
 
@@ -119,43 +109,90 @@ public class StatisticDaoImpl implements StatisticDao {
             clicks += st.getClicks();
         }
 
-        statistic.setDate(new Date());
-        statistic.setClicks(clicks);
-        statistic.setPaid(paid);
+        JSONObject genStatistic = new JSONObject();
+        genStatistic.put("totalClicks",new Integer(clicks));
+        genStatistic.put("totalPaid", new Integer(paid));
+
 
         tx.commit();
         session.close();
-        JSONObject genStatistic = new JSONObject();
-        genStatistic.put("totalClicks",new Integer(statistic.getClicks()));
-        genStatistic.put("totalPaid", new Integer(statistic.getPaid()));
+
         return genStatistic;
     }
 
-    public void complicateQuery(Date from, Date to)
+    public JSONArray complicateQuery(Date from, Date to)
     {
         Session session = Util.getSessionFactory().openSession();
         Transaction tx = session.beginTransaction();
 
-        Criteria criteria = session.createCriteria(Statistic.class)
-                .setProjection(Projections.projectionList()
-                .add(Projections.groupProperty("add.id"))
-                .add(Projections.max("clicks")));
+        Query query = session.getNamedQuery("@ALL_CATEGORIES");
 
-        //Get max from every advertisement
-        DetachedCriteria subCriteria = DetachedCriteria.forClass(Statistic.class)
-                .setProjection(Projections.projectionList()
-                .add(Projections.groupProperty("add.id"))
-                .add(Projections.max("clicks")));
+        List<Category> categories = query.list();
 
-        //Get statistics in period
-        DetachedCriteria anotherCriteria = DetachedCriteria.forClass(Statistic.class)
-                .add(Restrictions.and(
-                        Restrictions.ge("date", from),
-                        Restrictions.le("date", to)
-                ));
+        JSONArray complicateArray = new JSONArray();
 
+        for (Category ct:
+             categories) {
+
+            List<Advertisement> adsWithMaxClicks = new ArrayList<Advertisement>();
+
+            int max = -100;
+
+            JSONObject item = new JSONObject();
+
+            item.put("categoryID", ct.getId());
+            item.put("categoryState", ct.getState());
+            item.put("categoryName", ct.getName());
+
+            JSONArray ads = new JSONArray();
+
+            // Find max clicks in perion 'from - to' among all ads in category
+            for (Advertisement ad:
+                 ct.getAds()) {
+
+                JSONObject thBestStatistic = generalStatisticInPeriod(ad, from, to);
+
+                int auxMax = (Integer) thBestStatistic.get("totalClicked");
+
+                // Collect ads
+                if (auxMax == max)
+                {
+                    adsWithMaxClicks.add(ad);
+                }
+
+                if (auxMax > max)
+                {
+                    max = auxMax;
+                    adsWithMaxClicks.clear();
+                    adsWithMaxClicks.add(ad);
+                }
+
+            }
+
+            for (Advertisement ad:
+                 adsWithMaxClicks) {
+
+                    JSONObject jAd = new JSONObject();
+
+                    jAd.put("adID", ad.getId());
+                    jAd.put("adName", ad.getName());
+                    jAd.put("adState", ad.getState());
+                    jAd.put("adClicks", max);
+
+                    ads.add(jAd);
+            }
+
+            item.put("ads", ads);
+
+            complicateArray.add(item);
+
+
+        }
 
         tx.commit();
         session.close();
+
+        return complicateArray;
     }
 }
+

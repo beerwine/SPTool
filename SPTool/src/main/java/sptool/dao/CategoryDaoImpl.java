@@ -42,48 +42,17 @@ public class CategoryDaoImpl implements CategoryDao {
      * @return Category object
      */
 
-    public JSONObject getCategoryById(int id) {
+    public Category getCategoryById(int id) {
         Session session = Util.getSessionFactory().openSession();
 
         Transaction tx = session.beginTransaction();
 
         Category category = (Category) session.get(Category.class, id);
 
-        JSONObject jsonCategory = null;
-
-        if (category != null)
-        {
-            jsonCategory = new JSONObject();
-
-            jsonCategory.put("id", new Integer(category.getId()));
-
-            jsonCategory.put("name", category.getName());
-
-            jsonCategory.put("state", category.getState());
-
-            JSONArray ads = new JSONArray();
-
-            for (Advertisement ad:
-                 category.getAds()) {
-
-                JSONObject advertisement = new JSONObject();
-
-                advertisement.put("id", new Integer(ad.getId()));
-                advertisement.put("state", ad.getState());
-                advertisement.put("name", ad.getName());
-                advertisement.put("pucture", ad.getPictureUrl());
-                advertisement.put("url", ad.getLinkUrl());
-
-                ads.add(advertisement);
-            }
-            jsonCategory.put("ads", ads);
-
-        }
-
 
         tx.commit();
         session.close();
-        return jsonCategory;
+        return category;
     }
 
     /**

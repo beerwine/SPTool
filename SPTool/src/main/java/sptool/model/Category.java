@@ -33,7 +33,7 @@ public class Category {
     @Pattern(regexp = "(Active|Stopped|Pending)")
     private String state = "Stopped";
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonIgnore
     private List<Advertisement> ads;
 
