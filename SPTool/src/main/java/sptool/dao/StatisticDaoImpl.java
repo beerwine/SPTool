@@ -16,9 +16,7 @@ import sptool.model.Category;
 import sptool.model.Statistic;
 import sptool.util.Util;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by sergey on 6/6/16.
@@ -98,7 +96,7 @@ public class StatisticDaoImpl implements StatisticDao {
                         Restrictions.eq("ct.id", category.getId())
                 ));
 
-        List<Statistic> statistics = criteria.list();
+        Set<Statistic> statistics = new HashSet<Statistic>(criteria.list());
 
         int paid = 0;
         int clicks = 0;

@@ -56,7 +56,6 @@ public class Category {
     }
 
 
-
     public String getState() {
         return state;
     }
